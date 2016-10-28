@@ -27,11 +27,23 @@ class MyWidget(QtGui.QWidget):
         uic.loadUi(filename,self)
 
         self.img1 = pg.ImageItem()
+
         self.p1 = self.image1.addPlot()
+        self.p1.hideAxis('left')
+        self.p1.hideAxis('bottom')
         self.p1.addItem(self.img1)
+
         self.img2 = pg.ImageItem()
         self.p2 = self.image2.addPlot()
+        self.p2.hideAxis('left')
+        self.p2.hideAxis('bottom')
         self.p2.addItem(self.img2)
+
+        self.img3 = pg.ImageItem()
+        self.p3 = self.image3.addPlot()
+        self.p3.hideAxis('left')
+        self.p3.hideAxis('bottom')
+        self.p3.addItem(self.img3)
 
     def Clicked(self,item):
         print "Current coverslip ID: " + item.text()
@@ -69,29 +81,27 @@ class MyWidget(QtGui.QWidget):
         except mysql.connector.Error as err:
             print("Something went wrong: {}".format(err))
 
-    def csIDListClicked(self):
-        print 'Current id is:' + self.c
-
 
     def dopush1(self):
         print "hello"
         self.mmc.snapImage()
-        data = self.mmc.getImage()
-        print data.shape
-        print data.dtype
+        data = np.rot90(self.mmc.getImage(),3)
         self.img1.setImage(data, autoLevels=False)
         self.img1FileName = datetime.now().strftime('%Y-%m-%d')
 
     def dopush2(self):
         print "hello 22"
         self.mmc.snapImage()
-        data = self.mmc.getImage()
-        print data.shape
-        print data.dtype
+        data = np.rot90(self.mmc.getImage(),3)
         self.img2.setImage(data, autoLevels=False)
         self.img2FileName = datetime.now().strftime('%Y-%m-%d')
 
+
+        #Do the subtraction
+        self.img3.setImage(self.img2.image - self.img1.image, autoLevels=False)
+
     def saveBtnClick(self):
+
         print "Populate DB and save files"
         print os.path.join(self.dustAssayImagesRoot, self.img1FileName)
 
