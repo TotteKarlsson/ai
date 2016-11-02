@@ -5,6 +5,7 @@ import pyqtgraph as pg
 import numpy as np
 import MMCorePy
 import mysql.connector
+import glob
 from datetime import datetime
 
 class MyWidget(QtGui.QWidget):
@@ -61,13 +62,14 @@ class MyWidget(QtGui.QWidget):
 
     def populateDB(self):
         dustAssay = ("INSERT INTO coverslipdustassays"
-                    "(coverslip_id, background_image, coverslip_image, coverslip_status)"
-                    "VALUES (%s, %s, %s, %s)")
+                    "(coverslip_id, background_image, coverslip_image, result_image, coverslip_status)"
+                    "VALUES (%s, %s, %s, %s, %s)")
         dbData = []
         csID = self.csIDList.currentItem().text()
         dbData.append(str(csID[0]))
         dbData.append(self.img1FileName)
         dbData.append(self.img2FileName)
+        dbData.append(self.img3FileName)
         dbData.append(str(csID[2]))
 
         try:
@@ -85,39 +87,42 @@ class MyWidget(QtGui.QWidget):
     def dopush1(self):
         print "hello"
         self.mmc.snapImage()
-        data = np.rot90(self.mmc.getImage(),3)
+        data = np.rot90(self.mmc.getImage(), 3)
         self.img1.setImage(data, autoLevels=False)
         self.img1FileName = datetime.now().strftime('%Y-%m-%d')
 
     def dopush2(self):
         print "hello 22"
         self.mmc.snapImage()
-        data = np.rot90(self.mmc.getImage(),3)
+        data = np.rot90(self.mmc.getImage(), 3)
         self.img2.setImage(data, autoLevels=False)
         self.img2FileName = datetime.now().strftime('%Y-%m-%d')
 
-
         #Do the subtraction
         self.img3.setImage(self.img2.image - self.img1.image, autoLevels=False)
+        self.img3FileName = datetime.now().strftime('%Y-%m-%d')
+
 
     def saveBtnClick(self):
 
         print "Populate DB and save files"
         print os.path.join(self.dustAssayImagesRoot, self.img1FileName)
 
-        path, dirs, files = os.walk(self.dustAssayImagesRoot).next()
-        file_count = len(files)
+        todaysDate = datetime.now().strftime('%Y-%m-%d')
+        file_count  = len(glob.glob1(self.dustAssayImagesRoot, todaysDate + "*"))
 
-        self.img1FileName = self.img1FileName + '_' + str(file_count + 1) + '.jpg'
+        self.img1FileName = self.img1FileName + '_' + `file_count + 1` + '.jpg'
         self.img2FileName = self.img2FileName + '_' + `file_count + 2` + '.jpg'
+        self.img3FileName = self.img3FileName + '_' + `file_count + 3` + '.jpg'
 
         img1FName = os.path.join(self.dustAssayImagesRoot, self.img1FileName)
         img2FName = os.path.join(self.dustAssayImagesRoot, self.img2FileName)
+        img3FName = os.path.join(self.dustAssayImagesRoot, self.img3FileName)
 
         self.img1.save(img1FName)
         self.img2.save(img2FName)
+        self.img3.save(img3FName)
         self.populateDB()
-
 
     def run(self):
         self.show()
