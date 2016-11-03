@@ -1,12 +1,17 @@
-from PyQt4 import QtCore, QtGui, uic
 import os
 import sys
 import pyqtgraph as pg
 import numpy as np
 import MMCorePy
-import mysql.connector
+from PyQt4 import QtCore, QtGui, uic
+from pyat import atdb
+
 import glob
 from datetime import datetime
+
+#Some parameters
+gDustAssayImagesRoot = 'x:\ATDB\images\dustassay'
+gATDBIP = '127.0.0.1'
 
 class MyWidget(QtGui.QWidget):
     def __init__(self,configfile=''):
@@ -15,10 +20,13 @@ class MyWidget(QtGui.QWidget):
         self.pushButton1.clicked.connect(self.dopush1)
         self.pushButton2.clicked.connect(self.dopush2)
         self.PopulateBtn.clicked.connect(self.saveBtnClick)
+
         self.mmc = MMCorePy.CMMCore()
         self.mmc.loadSystemConfiguration(configfile)
-        self.dustAssayImagesRoot = 'x:\ATDB\images\dustassay'
-        self.cnx = mysql.connector.connect(user='atdb_client', password='atdb123', host='127.0.0.1', database='atdb')
+        self.dustAssayImagesRoot = gDustAssayImagesRoot
+
+        #Connect to the database
+        self.db = atdb(gATDBIP)
         self.csIDList.itemClicked.connect(self.Clicked)
         self.populateUI()
 
@@ -27,116 +35,100 @@ class MyWidget(QtGui.QWidget):
         filename = os.path.join(currpath,'csDustAssayUI.ui')
         uic.loadUi(filename,self)
 
-        self.img1 = pg.ImageItem()
+        self.img1 = self.setupImageWidget(self.image1)
+        self.img2 = self.setupImageWidget(self.image2)
+        self.img3 = self.setupImageWidget(self.image3)
 
-        self.p1 = self.image1.addPlot()
-        self.p1.hideAxis('left')
-        self.p1.hideAxis('bottom')
-        self.p1.addItem(self.img1)
-
-        self.img2 = pg.ImageItem()
-        self.p2 = self.image2.addPlot()
-        self.p2.hideAxis('left')
-        self.p2.hideAxis('bottom')
-        self.p2.addItem(self.img2)
-
-        self.img3 = pg.ImageItem()
-        self.p3 = self.image3.addPlot()
-        self.p3.hideAxis('left')
-        self.p3.hideAxis('bottom')
-        self.p3.addItem(self.img3)
-
-    def Clicked(self,item):
-        print "Current coverslip ID: " + item.text()
+    def setupImageWidget(self, imageWidget = []):
+        imageItem  = pg.ImageItem()
+        p = imageWidget.addPlot()
+        p.hideAxis('left')
+        p.hideAxis('bottom')
+        p.addItem(imageItem)
+        return imageItem
 
     def populateUI(self):
-        self.loadCoverSlipIDS()
+        #Load coverslips into listbox
+        coverslips = self.db.getListOfCoverSlips()
+        for coverslip in coverslips:
+            self.csIDList.addItem(str(coverslip[0]) + ',' + str(coverslip[1]))
 
-    def loadCoverSlipIDS(self):
-        cursor = self.cnx.cursor()
-        q = "SELECT id, status FROM coverslip ORDER by id"
-        cursor.execute(q)
-        rows = cursor.fetchall()
-        for row in rows:
-            self.csIDList.addItem(str(row[0]) + ',' + str(row[1]))
+        #Select last coverslip
+        if self.csIDList.count() > 0:
+            self.csIDList.item(0).setSelected(True);
 
-    def populateDB(self):
-        dustAssay = ("INSERT INTO coverslipdustassays"
-                    "(coverslip_id, background_image, coverslip_image, result_image, coverslip_status)"
-                    "VALUES (%s, %s, %s, %s, %s)")
+    def populateDB(self, fName1, fName2, fName3):
         dbData = []
         csID = self.csIDList.currentItem().text()
+
+        #CoverSlip ID
         dbData.append(str(csID[0]))
-        dbData.append(self.img1FileName)
-        dbData.append(self.img2FileName)
-        dbData.append(self.img3FileName)
+
+        #Assay data
+        dbData.append(fName1)
+        dbData.append(fName2)
+        dbData.append(fName3)
+
+        #CoverSlip status
         dbData.append(str(csID[2]))
 
         try:
-            cursor = self.cnx.cursor()
-            cursor.execute(dustAssay, dbData)
-            newID = cursor.lastrowid
-            print 'Inserted assay: ' + `newID`
-            self.cnx.commit()
-            cursor.close()
-
+            self.db.insertCoverSlipAssayData(dbData)
         except mysql.connector.Error as err:
-            print("Something went wrong: {}".format(err))
+            print("Something went wrong with the DB: {}".format(err))
 
+    def Clicked(self,item):
+            print "Current coverslip ID: " + item.text()
 
+    #Pressing buttons..
     def dopush1(self):
-        print "hello"
         self.mmc.snapImage()
         data = np.rot90(self.mmc.getImage(), 3)
         self.img1.setImage(data, autoLevels=False)
-        self.img1FileName = datetime.now().strftime('%Y-%m-%d')
 
     def dopush2(self):
-        print "hello 22"
         self.mmc.snapImage()
         data = np.rot90(self.mmc.getImage(), 3)
         self.img2.setImage(data, autoLevels=False)
-        self.img2FileName = datetime.now().strftime('%Y-%m-%d')
 
         #Do the subtraction
         result = self.img2.image.astype(float) - self.img1.image.astype(float)
         #np.clip(result, 0, [0,25], out=result)
-        self.img3.setImage( result, autoLevels=False)
-        self.img3FileName = datetime.now().strftime('%Y-%m-%d')
-
+        self.img3.setImage(result, autoLevels=False)
 
     def saveBtnClick(self):
-
         print "Populate DB and save files"
-        print os.path.join(self.dustAssayImagesRoot, self.img1FileName)
+        f1 = self.saveImage(self.img1)
+        f2 = self.saveImage(self.img2)
+        f3 = self.saveImage(self.img3)
+        self.populateDB(f1, f2, f3)
 
+    def saveImage(self, image=[]):
+        #Setup filenames
         todaysDate = datetime.now().strftime('%Y-%m-%d')
         file_count  = len(glob.glob1(self.dustAssayImagesRoot, todaysDate + "*"))
 
-        self.img1FileName = self.img1FileName + '_' + `file_count + 1` + '.jpg'
-        self.img2FileName = self.img2FileName + '_' + `file_count + 2` + '.jpg'
-        self.img3FileName = self.img3FileName + '_' + `file_count + 3` + '.jpg'
+        fName = todaysDate + '_' + `file_count + 1` + '.jpg'
+        fNameWPath = os.path.join(self.dustAssayImagesRoot, fName)
 
-        img1FName = os.path.join(self.dustAssayImagesRoot, self.img1FileName)
-        img2FName = os.path.join(self.dustAssayImagesRoot, self.img2FileName)
-        img3FName = os.path.join(self.dustAssayImagesRoot, self.img3FileName)
+        #Rotate image to "normal" before saving
+        image.setImage(np.rot90(image.image, 2), autoLevels=False)
 
-        self.img1.save(img1FName)
-        self.img2.save(img2FName)
-        self.img3.save(img3FName)
-        self.populateDB()
+        print "Saving:" + `fNameWPath`
+        image.save(fNameWPath)
+
+        #Rotate back for UI
+        image.setImage(np.rot90(image.image, 2), autoLevels=False)
+        return fName
 
     def run(self):
         self.show()
         qtapp.exec_()
 
 if __name__ == '__main__':
-
     qtapp = QtGui.QApplication(sys.argv)
     configfile= 'P:\\QtDemo\\ThorLabCameraOnly.cfg'
     app = MyWidget(configfile)
-
     qtapp.setWindowIcon(QtGui.QIcon('icons/csDustAssayApp.ico'))
-    #mainwindow.setWindowIcon(QtGui.QIcon('chalk.ico'))
 
     app.run()
