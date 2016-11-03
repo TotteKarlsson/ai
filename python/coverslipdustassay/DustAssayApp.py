@@ -99,7 +99,9 @@ class MyWidget(QtGui.QWidget):
         self.img2FileName = datetime.now().strftime('%Y-%m-%d')
 
         #Do the subtraction
-        self.img3.setImage(self.img2.image - self.img1.image, autoLevels=False)
+        result = self.img2.image.astype(float) - self.img1.image.astype(float)
+        #np.clip(result, 0, [0,25], out=result)
+        self.img3.setImage( result, autoLevels=False)
         self.img3FileName = datetime.now().strftime('%Y-%m-%d')
 
 
@@ -130,7 +132,11 @@ class MyWidget(QtGui.QWidget):
 
 if __name__ == '__main__':
 
-     qtapp = QtGui.QApplication(sys.argv)
-     configfile= 'P:\\QtDemo\\ThorLabCameraOnly.cfg'
-     app = MyWidget(configfile)
-     app.run()
+    qtapp = QtGui.QApplication(sys.argv)
+    configfile= 'P:\\QtDemo\\ThorLabCameraOnly.cfg'
+    app = MyWidget(configfile)
+
+    qtapp.setWindowIcon(QtGui.QIcon('icons/csDustAssayApp.ico'))
+    #mainwindow.setWindowIcon(QtGui.QIcon('chalk.ico'))
+
+    app.run()
