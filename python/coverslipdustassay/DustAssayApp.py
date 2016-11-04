@@ -12,6 +12,7 @@ from datetime import datetime
 #Some parameters
 gDustAssayImagesRoot = 'x:\ATDB\images\dustassay'
 gATDBIP = '127.0.0.1'
+gMMConfigFile = 'P:\\ais\\micromanager\\ThorLabCameraOnly.cfg'
 
 class MyWidget(QtGui.QWidget):
     def __init__(self,configfile=''):
@@ -22,7 +23,9 @@ class MyWidget(QtGui.QWidget):
         self.PopulateBtn.clicked.connect(self.saveBtnClick)
 
         self.mmc = MMCorePy.CMMCore()
+        print self.mmc.getVersionInfo()
         self.mmc.loadSystemConfiguration(configfile)
+        #self.mmc.setProperty('Camera', 'PixelType', '32bitRGB')  # Change pixel type
         self.dustAssayImagesRoot = gDustAssayImagesRoot
 
         #Connect to the database
@@ -127,7 +130,7 @@ class MyWidget(QtGui.QWidget):
 
 if __name__ == '__main__':
     qtapp = QtGui.QApplication(sys.argv)
-    configfile= 'P:\\QtDemo\\ThorLabCameraOnly.cfg'
+    configfile= gMMConfigFile
     app = MyWidget(configfile)
     qtapp.setWindowIcon(QtGui.QIcon('icons/csDustAssayApp.ico'))
 
