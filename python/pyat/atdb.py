@@ -5,21 +5,24 @@
 #-------------------------------------------------------------------------------
 
 import mysql.connector
+from PyQt4 import QtCore, QtGui, uic
+
 
 class atdb:
-    def __init__(self, server_ip=''):
+    def __init__(self, _server_ip='', _database='atdb'):
         ''' Constructor for atdb. '''
-        self.IP = server_ip
+        self.IP = _server_ip
+        self.database = _database
 
         #Connect if given an ip
-        if len(server_ip):
-            self.cnx = mysql.connector.connect(user='atdb_client', password='atdb123', host=self.IP, database='atdb')
+        if len(_server_ip):
+            self.cnx = mysql.connector.connect(user='atdb_client', password='atdb123', host=self.IP, database=self.database)
 
-    def connect(self, ip=''):
+    def connect(self, ip='', _database=''):
         if len(ip):
             self.IP = ip
 
-        self.cnx = mysql.connector.connect(user='atdb_client', password='atdb123', host=self.IP, database='atdb')
+        self.cnx = mysql.connector.connect(user='atdb_client', password='atdb123', host=self.IP, database=_database)
 
     def disconnect(self):
         self.cnx.disconnect()
@@ -50,4 +53,17 @@ class atdb:
         cursor.close()
         return newID
 
+
+def showMessageDialog(message):
+   msg = QtGui.QMessageBox()
+   msg.setIcon(QtGui.QMessageBox.Warning)
+   msg.setText(message)
+   msg.setWindowTitle("Message to you")
+   msg.setStandardButtons(QtGui.QMessageBox.Ok)
+   #msg.buttonClicked.connect(self.msgbtn)
+   retval = msg.exec_()
+   print "value of pressed message box button:", retval
+
+def msgbtn(i):
+    print "Button pressed is:",i.text()
 

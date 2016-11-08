@@ -5,7 +5,7 @@ from pyat import atdb
 try:
     db = atdb()
 
-    db.connect('127.0.0.1')
+    db.connect('127.0.0.1', 'atdb_demo')
 
     db.listCoverSlips()
 

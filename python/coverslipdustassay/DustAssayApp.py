@@ -3,6 +3,7 @@ import sys
 import pyqtgraph as pg
 import numpy as np
 import MMCorePy
+import mysql
 from PyQt4 import QtCore, QtGui, uic
 from pyat import atdb
 
@@ -10,9 +11,15 @@ import glob
 from datetime import datetime
 
 #Some parameters
-gDustAssayImagesRoot = 'x:\ATDB\images\dustassay'
+dt = datetime.now().strftime('%Y%m')
+
+gDustAssayImagesRoot = 'x:\ATDB\images\dustassay\\' + dt
 gATDBIP = '127.0.0.1'
+gDataBaseName = 'atdb_demo'
+
 gMMConfigFile = 'P:\\ais\\micromanager\\ThorLabCameraOnly.cfg'
+
+
 
 class MyWidget(QtGui.QWidget):
     def __init__(self,configfile=''):
@@ -29,7 +36,7 @@ class MyWidget(QtGui.QWidget):
         self.dustAssayImagesRoot = gDustAssayImagesRoot
 
         #Connect to the database
-        self.db = atdb(gATDBIP)
+        self.db = atdb(gATDBIP, gDataBaseName)
         self.csIDList.itemClicked.connect(self.Clicked)
         self.populateUI()
 
@@ -78,10 +85,13 @@ class MyWidget(QtGui.QWidget):
         try:
             self.db.insertCoverSlipAssayData(dbData)
         except mysql.connector.Error as err:
+            pyat.showMessageDialog("Something went wrong with the DB: {}".format(err))
             print("Something went wrong with the DB: {}".format(err))
 
     def Clicked(self,item):
             print "Current coverslip ID: " + item.text()
+
+
 
     #Pressing buttons..
     def dopush1(self):
@@ -108,10 +118,14 @@ class MyWidget(QtGui.QWidget):
 
     def saveImage(self, image=[]):
         #Setup filenames
-        todaysDate = datetime.now().strftime('%Y-%m-%d')
-        file_count  = len(glob.glob1(self.dustAssayImagesRoot, todaysDate + "*"))
+        (dt, micro) = datetime.now().strftime('%Y-%m-%d-%H%M%S.%f').split('.')
+        dt = "%s.%03d" % (dt, int(micro) / 1000)
 
-        fName = todaysDate + '_' + `file_count + 1` + '.jpg'
+        fName = dt + '.jpg'
+
+        #Create folder if it does not exist
+        if not os.path.exists(self.dustAssayImagesRoot):
+            os.makedirs(self.dustAssayImagesRoot)
         fNameWPath = os.path.join(self.dustAssayImagesRoot, fName)
 
         #Rotate image to "normal" before saving
@@ -130,8 +144,7 @@ class MyWidget(QtGui.QWidget):
 
 if __name__ == '__main__':
     qtapp = QtGui.QApplication(sys.argv)
-    configfile= gMMConfigFile
-    app = MyWidget(configfile)
+    app = MyWidget(gMMConfigFile)
     qtapp.setWindowIcon(QtGui.QIcon('icons/csDustAssayApp.ico'))
 
     app.run()
