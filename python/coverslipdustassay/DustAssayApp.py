@@ -6,7 +6,7 @@ import MMCorePy
 import mysql
 from PyQt4 import QtCore, QtGui, uic
 from pyat import atdb
-
+from pyat.atutils import *
 import glob
 from datetime import datetime
 
@@ -85,13 +85,11 @@ class MyWidget(QtGui.QWidget):
         try:
             self.db.insertCoverSlipAssayData(dbData)
         except mysql.connector.Error as err:
-            pyat.showMessageDialog("Something went wrong with the DB: {}".format(err))
+            showMessageDialog("Something went wrong with the DB: {}".format(err))
             print("Something went wrong with the DB: {}".format(err))
 
     def Clicked(self,item):
             print "Current coverslip ID: " + item.text()
-
-
 
     #Pressing buttons..
     def dopush1(self):

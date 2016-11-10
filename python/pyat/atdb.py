@@ -5,8 +5,6 @@
 #-------------------------------------------------------------------------------
 
 import mysql.connector
-from PyQt4 import QtCore, QtGui, uic
-
 
 class atdb:
     def __init__(self, _server_ip='', _database='atdb'):
@@ -40,7 +38,7 @@ class atdb:
             print str(row[0]) + ',' + str(row[1])
 
     def insertCoverSlipAssayData(self, data = []):
-        q = (   "INSERT INTO coverslipdustassays"
+        q = (   "INSERT INTO coverslipdustassay"
                     "(coverslip_id, background_image, coverslip_image, result_image, coverslip_status)"
                 "VALUES "
                     "(%s, %s, %s, %s, %s)")
@@ -53,17 +51,4 @@ class atdb:
         cursor.close()
         return newID
 
-
-def showMessageDialog(message):
-   msg = QtGui.QMessageBox()
-   msg.setIcon(QtGui.QMessageBox.Warning)
-   msg.setText(message)
-   msg.setWindowTitle("Message to you")
-   msg.setStandardButtons(QtGui.QMessageBox.Ok)
-   #msg.buttonClicked.connect(self.msgbtn)
-   retval = msg.exec_()
-   print "value of pressed message box button:", retval
-
-def msgbtn(i):
-    print "Button pressed is:",i.text()
 
