@@ -98,10 +98,6 @@
         <TASM_Debugging>None</TASM_Debugging>
     </PropertyGroup>
     <ItemGroup>
-        <LibFiles Include="..\lib\label.lib" Condition="'$(Platform)'=='Win32'">
-            <BuildOrder>4</BuildOrder>
-            <IgnorePath>true</IgnorePath>
-        </LibFiles>
         <CppCompile Include="labelTester.cpp">
             <BuildOrder>0</BuildOrder>
         </CppCompile>
@@ -110,9 +106,6 @@
             <FormType>dfm</FormType>
             <DependentOn>TMainForm.h</DependentOn>
             <BuildOrder>2</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="p:\libs\atapi\source\labelprinter\atTSCLIB.cpp">
-            <BuildOrder>4</BuildOrder>
         </CppCompile>
         <FormResources Include="TMainForm.dfm"/>
         <BuildConfiguration Include="Release">

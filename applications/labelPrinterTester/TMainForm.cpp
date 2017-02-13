@@ -43,7 +43,7 @@ void __fastcall TMainForm::Button2Click(TObject *Sender)
 {
 	try
     {
-    	mTSC.print(mDataStr->getValue(), mCopies->getValue());
+    	mTSC.printFreshBatchLabel(mDataStr->getValue(), mCopies->getValue());
     }
     catch(...)
     {
